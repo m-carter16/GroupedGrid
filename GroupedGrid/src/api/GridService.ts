@@ -63,7 +63,16 @@ export class GridService {
         });
     }
 
-    public getOptionSet = async (columnName: string): Promise<any[]> => {
+    public getOptionSet = async (columnName: string, entityName?: string): Promise<any[]> => {
+        let _optionSet: any[] = [];
+        const entity = entityName || this._entity;
+        const metadata = await this._context.utils.getEntityMetadata(entity, [columnName]);
+        const columnMetadata = await metadata.Attributes.get(columnName);
+        _optionSet = await columnMetadata?.attributeDescriptor.OptionSet;
+        return _optionSet;
+    }
+
+    public getRelatedOptionSet = async (columnName: string): Promise<any[]> => {
         let _optionSet: any[] = [];
         const metadata = await this._context.utils.getEntityMetadata(this._entity, [columnName]);
         const columnMetadata = await metadata.Attributes.get(columnName);
@@ -173,5 +182,15 @@ export class GridService {
         const query = `?$select=${primaryIdAttribute},${primaryNameAttribute}&$filter=contains(fullname,'${filterText}') and not contains(fullname,%27%23%20%27)`
         const result = await this._context.webAPI.retrieveMultipleRecords(entity, query);
         return result.entities.map((entity: any) => ({ id: entity[entityMetadata.PrimaryIdAttribute], name: entity[primaryNameAttribute] }));
+    }
+
+    public navigateToItem = (entityName: string | undefined, entityId: string) => {
+        if (entityName) {
+            const options: ComponentFramework.NavigationApi.EntityFormOptions = {
+                entityName,
+                entityId,
+            };
+            this._context.navigation.openForm(options);
+        }
     }
 }

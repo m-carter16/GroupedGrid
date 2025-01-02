@@ -42,7 +42,7 @@ export class GroupedGrid implements ComponentFramework.StandardControl<IInputs, 
         this.context.parameters.dataset.refresh();
     };
 
-    onFilter = (name: string, operator: string, value: string | string[], filter: boolean): void => {
+    onFilter = (name: string, operator: string, value: string | string[], filter: boolean, entityAlias?: string): void => {
         const filtering = this.context.parameters.dataset.filtering;
         const conditionOperator: XrmConditionOperator = mapFilterConditionToConditionOperator(operator);
         const condition: XrmConditionExpression = {
@@ -50,6 +50,11 @@ export class GroupedGrid implements ComponentFramework.StandardControl<IInputs, 
             conditionOperator: conditionOperator,
             value: value,
         };
+        
+        if (entityAlias) {
+            condition.entityAliasName = entityAlias;
+        }
+
         if (filter) {
             filtering.setFilter({
                 conditions: [
@@ -114,18 +119,23 @@ export class GroupedGrid implements ComponentFramework.StandardControl<IInputs, 
             }
             else {
                 const dataset = context.parameters.dataset;
+                const groupingColumn = dataset.columns.find((column) => column.alias ==="groupingColumn");
+                const groupingColumn2 = dataset.columns.find((column) => column.alias ==="groupingColumn2");             
+                
                 const paging = context.parameters.dataset.paging;
+                const entities = context.parameters.dataset.linking.getLinkedEntities()
                 // The test harness provides width/height as strings
-                const allocatedWidth = parseInt(context.mode.allocatedWidth as unknown as string);
-                const allocatedHeight = parseInt(context.mode.allocatedHeight as unknown as string);
+                // const allocatedWidth = parseInt(context.mode.allocatedWidth as unknown as string);
+                // const allocatedHeight = parseInt(context.mode.allocatedHeight as unknown as string);
 
                 const props: AppProps = {
                     context: context,
                     entity: (context.mode as any).contextInfo.entityTypeName,
-                    width: allocatedWidth,
-                    height: allocatedHeight,
+                    width: context.mode.allocatedWidth,
+                    height: context.mode.allocatedHeight,
                     columns: dataset.columns,
                     records: dataset.records,
+                    linkedEntities: entities,
                     sortedRecordIds: dataset.sortedRecordIds,
                     hasNextPage: paging.hasNextPage,
                     hasPreviousPage: paging.hasPreviousPage,
@@ -144,8 +154,8 @@ export class GroupedGrid implements ComponentFramework.StandardControl<IInputs, 
                     loadPreviousPage: this.loadPreviousPage,
                     isFullScreen: this.isFullScreen,
                     onFullScreen: this.onFullScreen,
-                    groupingColumn: context.parameters.groupingColumn.raw || "",
-                    groupingColumn2: context.parameters.groupingColumn2.raw || "",
+                    groupingColumn: groupingColumn ? groupingColumn.name : "", // context.parameters.groupingColumn.raw || "",
+                    groupingColumn2: groupingColumn2 ? groupingColumn2.name : "", // context.parameters.groupingColumn2.raw || "",
                     allowGroupChange: context.parameters.allowGroupChange.raw === "1",
                     collapsed: context.parameters.collapsed.raw ? context.parameters.collapsed.raw === "1" : true,
                 };

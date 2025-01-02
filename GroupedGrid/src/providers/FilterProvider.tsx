@@ -2,6 +2,7 @@ import * as React from 'react';
 import { IColumn, Target, IDropdownOption, IComboBoxOption, IComboBox } from '@fluentui/react';
 import { dateTypes, FilterConditionOperator, lookupTypes, numberTypes, optionTypes, textTypes } from '../types/FilterProps';
 import { useApiProvider } from './ApiProvider';
+import { LinkedEntities } from '../types/AppProps';
 
 type FilterModel = {
     isFilterCalloutVisible: boolean;
@@ -19,18 +20,19 @@ type FilterModel = {
     setFilterValue: React.Dispatch<React.SetStateAction<string | string[]>>;
     applyFilter: () => void;
     clearFilter: () => void;
-    onFilter: (name: string, operator: string, value: string | string[], filter: boolean) => void;
+    onFilter: (name: string, operator: string, value: string | string[], filter: boolean, entityAlias?: string) => void;
     setFilterCalloutVisible: React.Dispatch<React.SetStateAction<boolean>>;
     handleOptionChange: (event: React.FormEvent<IComboBox>, option?: IComboBoxOption, index?: number, value?: string) => void;
 };
 
 type FilterProviderProps = {
-    onFilter: (name: string, operator: string, value: string | string[], filter: boolean) => void;
+    linkedEntities: LinkedEntities;
+    onFilter: (name: string, operator: string, value: string | string[], filter: boolean, entityAlias?: string) => void;
 };
 
 const Context = React.createContext({} as FilterModel);
 const FilterProvider: React.FC<FilterProviderProps> = (props) => {
-    const { onFilter, children } = props;
+    const { linkedEntities, onFilter, children } = props;
     const { gridService } = useApiProvider();
     const [isFilterCalloutVisible, setFilterCalloutVisible] = React.useState(false);
     const [filterColumn, setFilterColumn] = React.useState<IColumn | undefined>(undefined);
@@ -54,6 +56,8 @@ const FilterProvider: React.FC<FilterProviderProps> = (props) => {
     const applyFilter = () => {
         if (filterColumn && selectedOperator) {
             let newFilterValue = filterValue;
+
+            
             
             if ((selectedOperator.key === FilterConditionOperator.Like
                 || selectedOperator.key === FilterConditionOperator.NotLike)
@@ -62,17 +66,20 @@ const FilterProvider: React.FC<FilterProviderProps> = (props) => {
             }
 
             onFilter("", "", "", false);
-            filterColumn.isFiltered = true;
-            // console.log("🚀 ~ file: FilterProvider.tsx:66 ~ applyFilter ~ newFilterValue:", newFilterValue);
-            // console.log("🚀 ~ file: FilterProvider.tsx:66 ~ applyFilter ~ selectedOperator.key:", selectedOperator.key);
-            // console.log("🚀 ~ file: FilterProvider.tsx:66 ~ applyFilter ~ filterColumn.key:", filterColumn.key);
-            onFilter(filterColumn.key, selectedOperator.key as string, newFilterValue, true);
+
+            if (filterColumn.key.includes(".")) {
+                const [entityAlias, columnKey] = filterColumn.key.split(".");
+                onFilter(columnKey, selectedOperator.key as string, newFilterValue, true, entityAlias);
+            } else {
+                onFilter(filterColumn.key, selectedOperator.key as string, newFilterValue, true);
+            }
             setFilterCalloutVisible(false);
         }
     };
 
     const clearFilter = () => {
         if (filterColumn) {
+            setFilterValue("");
             filterColumn.isFiltered = false;
             onFilter("", "", "", false);
             setFilterCalloutVisible(false);
@@ -153,11 +160,17 @@ const FilterProvider: React.FC<FilterProviderProps> = (props) => {
 
     React.useEffect(() => {
         const getOptionSetOptions = async () => {
-            if (filterColumn && columnDataType === "OptionSet") {
-                const _options = await gridService.getOptionSet(filterColumn.key);
-                // console.log("🚀 ~ file: FilterProvider.tsx:121 ~ getOptionSetOptions ~ _options:", _options);
+            let _options: any[] = [];
+            if (filterColumn && columnDataType === "OptionSet") {                
+                if (filterColumn.key.includes(".")) {              
+                  const [entityAlias, columnKey] = filterColumn.key.split(".");
+                  const entityName = linkedEntities.find(e => e.alias === entityAlias)?.name;
+                  _options = await gridService.getOptionSet(columnKey, entityName);
+                } else {
+                    _options = await gridService.getOptionSet(filterColumn.key);
+                }
+
                 const _optionSetOptions = _options.map((o) => ({ key: o.Value, text: o.Label }));
-                // console.log("🚀 ~ file: FilterProvider.tsx:71 ~ getOptionSetOptions ~ _optionSetOptions:", _optionSetOptions);
                 setFilterOptions(_optionSetOptions);
             }
         };

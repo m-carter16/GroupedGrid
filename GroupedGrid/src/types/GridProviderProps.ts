@@ -9,6 +9,7 @@ export type GridProviderProps = {
     columns: DataSetColumn[];
     records: Record<string, DataSetRecord>;
     sortedRecordIds: string[];
+    width: number;
     hasNextPage: boolean;
     currentPage: number;
     sorting: ComponentFramework.PropertyHelper.DataSetApi.SortStatus[];
@@ -21,6 +22,6 @@ export type GridProviderProps = {
     collapsed: boolean;
     onSort: (name: string, desc: boolean) => void;
     onNavigate: (item?: DataSetRecord) => void;
-    onFilter: (name: string, operator: string, value: string | string[], filter: boolean) => void;
+    onFilter: (name: string, operator: string, value: string | string[], filter: boolean, entityAlias?: string) => void;
     children: React.ReactNode;
 };

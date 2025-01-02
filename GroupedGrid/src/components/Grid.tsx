@@ -13,11 +13,12 @@ import FilterModal from './FilterModal';
 import GridGroupPicker from './GridGroupPickers';
 import GridLoading from './GridLoading';
 import { DataSetRecord } from '../types/AppProps';
+import WidthModal from './WidthModal';
 
 const Grid: React.FC<GridProps> = (props) => {
-    const { height, width, resources, onNavigate, setSelectedRecords } = props;
-    const { gridColumns, sortedItems, groups, currentPage, itemsLoading, groupsLoading, contextualMenuProps,
-        componentIsLoading, allowGroupChange, onRenderDetailsHeader, onRenderItemColumn, onRenderCheckbox
+    const { resources, onNavigate, setSelectedRecords } = props;
+    const { gridColumns, sortedItems, groups, currentPage, itemsLoading, groupsLoading, componentIsLoading,
+        contextualMenuProps, onRenderDetailsHeader, onRenderItemColumn, onRenderCheckbox
     } = useGridProvider();
     const [selectedCount, setSelectedCount] = React.useState(0);
     const forceUpdate = useForceUpdate();
@@ -41,13 +42,6 @@ const Grid: React.FC<GridProps> = (props) => {
 		});
 	});
 
-    const rootContainerStyle: React.CSSProperties = React.useMemo(() => {
-        return {
-            height: height === -1 ? '100%' : height,
-            width: width,
-        };
-    }, [width, height]);
-
     if (itemsLoading || componentIsLoading || groupsLoading) {
         return (
             <GridLoading />
@@ -55,7 +49,7 @@ const Grid: React.FC<GridProps> = (props) => {
     }
 
     return (
-        <Stack verticalFill grow style={rootContainerStyle}>
+        <Stack verticalFill grow style={{ margin: '0 15px' }}>
             {/* {allowGroupChange &&
                 <Stack.Item >
                     <GridGroupPicker />
@@ -68,10 +62,9 @@ const Grid: React.FC<GridProps> = (props) => {
                         <Text variant="large">{resources.getString('Label_NoRecords')}</Text>
                     </Stack>
                 )}
-                <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto} style={{ paddingLeft: '20px' }}>
+                <ScrollablePane scrollbarVisibility={ScrollbarVisibility.auto}>
                     <DetailsList
                         columns={gridColumns}
-                        // compact={false}
                         items={sortedItems}
                         groups={groups}
                         selection={selection}
@@ -79,7 +72,7 @@ const Grid: React.FC<GridProps> = (props) => {
                         initialFocusedIndex={0}
                         checkButtonAriaLabel="select row"
                         checkboxVisibility={CheckboxVisibility.always}
-                        layoutMode={DetailsListLayoutMode.fixedColumns}
+                        layoutMode={DetailsListLayoutMode.justified}
                         constrainMode={ConstrainMode.unconstrained}
                         onRenderDetailsHeader={onRenderDetailsHeader}
                         onRenderItemColumn={onRenderItemColumn}
@@ -89,9 +82,11 @@ const Grid: React.FC<GridProps> = (props) => {
                             showEmptyGroups: true,
                             onRenderHeader: (props) => <GridGroupHeader {...props} />,
                         }}
+                        // compact={false}
                     />
                     {contextualMenuProps && <ContextualMenu {...contextualMenuProps} />}
                     <FilterModal {...props} />
+                    <WidthModal {...props} />
                 </ScrollablePane>
             </Stack.Item>
             <Separator />
@@ -100,6 +95,6 @@ const Grid: React.FC<GridProps> = (props) => {
             </Stack.Item>
         </Stack>
     );
-}
+};
 
 export default Grid;

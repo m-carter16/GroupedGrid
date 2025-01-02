@@ -2,8 +2,16 @@ import * as React from 'react';
 import { useApiProvider } from '../providers/ApiProvider';
 import { DataSetColumn, DataSetRecord } from '../types/AppProps';
 
-export const useGetSortedItems = (items: DataSetRecord[], primaryGroupByName: string, secondaryGroupByName?: string, firstColumn?: DataSetColumn) => {
-    const {gridService} = useApiProvider();
+export const useSortedItems = (
+    records: Record<string, DataSetRecord>,
+    sortedRecordIds: string[],
+    primaryGroupByName: string,
+    secondaryGroupByName: string,
+    firstColumn: DataSetColumn,
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+) => {
+    const { gridService } = useApiProvider();
+    const [items, setItems] = React.useState<DataSetRecord[]>([]);
     const [sortedItems, setSortedItems] = React.useState<DataSetRecord[]>([]);
 
     const sortItems = (items: DataSetRecord[], column: DataSetColumn) => {
@@ -14,7 +22,7 @@ export const useGetSortedItems = (items: DataSetRecord[], primaryGroupByName: st
     const sortNestedItems = (items: DataSetRecord[], primaryGroupByColumn: DataSetColumn, secondaryGroupByColumn: DataSetColumn) => {
         const primaryColumnName = primaryGroupByColumn.name;
         const secondaryColumnName = secondaryGroupByColumn ? secondaryGroupByColumn.name : "";
-            const sortedItems = items.sort((a, b) => {
+        const sortedItems = items.sort((a, b) => {
             const primaryValueA = a.getValue(primaryColumnName) as string;
             const primaryValueB = b.getValue(primaryColumnName) as string;
 
@@ -42,29 +50,28 @@ export const useGetSortedItems = (items: DataSetRecord[], primaryGroupByName: st
         if (primaryGroupByColumn) {
             if (secondaryGroupByColumn) {
                 _sortedItems = sortNestedItems(items, primaryGroupByColumn, secondaryGroupByColumn);
-                
+
             } else {
                 _sortedItems = sortItems(items, primaryGroupByColumn);
             }
         } else {
-            _sortedItems = sortItems(items, firstColumn!); 
+            _sortedItems = sortItems(items, firstColumn!);
         }
-        
+
         return _sortedItems;
     };
 
     React.useEffect(() => {
-        const fetchSortedItems = async () => {
-            try {
-                const _sortedItems = getSortedItems(items);
-                setSortedItems(_sortedItems);
-            } catch (error) {
-                console.error('Error sorting grouped items: ', error);
-            } 
-        }        
+        setIsLoading(false);
+        const _items = sortedRecordIds.map((id) => {
+            const record = records[id];
+            return record;
+        });
+        setItems(_items);
 
-        fetchSortedItems();
-    }, [items, primaryGroupByName, secondaryGroupByName]);
+        const _sortedItems = getSortedItems(_items);
+        setSortedItems(_sortedItems);
+    }, [records, sortedRecordIds]);
 
-    return sortedItems;
+    return { items, sortedItems };
 };

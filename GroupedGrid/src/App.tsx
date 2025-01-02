@@ -4,8 +4,10 @@ import Grid from './components/Grid';
 import { AppProps } from './types/AppProps';
 import { ApiProvider } from './providers/ApiProvider';
 import { FilterProvider } from './providers/FilterProvider';
+import { WidthProvider } from './providers/WidthProvider';
 import { registerIcons } from '@fluentui/react';
 import { initializeIcons } from '@fluentui/font-icons-mdl2';
+
 
 initializeIcons();
 
@@ -23,18 +25,20 @@ registerIcons({
 });
 
 const App: React.FC<AppProps> = (props) => {
-        
+
     React.useEffect(() => {
         console.log({ props });
     }, [props]);
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'block' }}>
+        <div style={{ width: '100%', height: '100%' }}>
             <ApiProvider {...props}>
                 <FilterProvider {...props}>
-                    <GridProvider {...props} >
-                        <Grid {...props} />
-                    </GridProvider>
+                    <WidthProvider {...props}>
+                        <GridProvider {...props} >
+                            <Grid {...props} />
+                        </GridProvider>
+                    </WidthProvider>
                 </FilterProvider>
             </ApiProvider>
         </div>

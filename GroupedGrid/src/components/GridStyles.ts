@@ -80,7 +80,7 @@ export const gridStyles = mergeStyleSets({
         display: 'flex',
         flexFlow: 'row',
         width: 'auto',
-        height: '100%',
+        height: '20px',
         boxSizing: 'border-box',
         justifyContent: 'flex-start',
         alignItems: 'center',

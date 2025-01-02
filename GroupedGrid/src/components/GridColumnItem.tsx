@@ -1,8 +1,9 @@
-import { IColumn, Label, Link, Stack } from '@fluentui/react';
 import * as React from 'react';
+import { IColumn, Label, Link, Stack } from '@fluentui/react';
 import { useApiProvider } from '../providers/ApiProvider';
 import { gridStyles } from './GridStyles';
 import { DataSetRecord } from '../types/AppProps';
+import { lookupTypes } from '../types/FilterProps';
 
 type GridColumnItemProps = {
     item: DataSetRecord | undefined;
@@ -15,6 +16,57 @@ const GridColumnItem: React.FC<GridColumnItemProps> = (props) => {
     const { gridService } = useApiProvider();
     const [fill, setFill] = React.useState<string>('transparent');
     const [padding, setPadding] = React.useState<string>('4px 0px');
+    const isLookup = column && column.data ? lookupTypes.includes(column.data.dataType) : false;
+
+    // handle primary column
+    if (column && column.fieldName && item) {
+        if (column.data.isPrimary) {
+            return (
+                <Stack className={gridStyles.itemContainer}>
+                    <Link className={gridStyles.link} onClick={() => onNavigate(item)}>
+                        {item.getFormattedValue(column.fieldName)}
+                    </Link>
+                </Stack>
+            );
+        }
+
+        // handle lookup column
+        if (isLookup) {
+            const entityRef = item.getValue(column.fieldName) as ComponentFramework.EntityReference;
+            const entityName = entityRef?.etn;
+            const entityId = entityRef?.id.guid
+            return (
+                <Stack className={gridStyles.itemContainer}>
+                    <Link className={gridStyles.link} onClick={() => gridService.navigateToItem(entityName, entityId)}>
+                        {item.getFormattedValue(column.fieldName)}
+                    </Link>
+                </Stack>
+            );
+        }
+
+        // handle user column (createdby, modifiedby)
+        if (column.fieldName === 'createdby' || column.fieldName === 'modifiedby') {
+            const entityRef = item.getValue(column.fieldName) as ComponentFramework.EntityReference;
+            const entityName = entityRef?.etn;
+            const entityId = entityRef?.id.guid
+            return (
+                <Stack className={gridStyles.itemContainer}>
+                    <Link className={gridStyles.link} onClick={() => gridService.navigateToItem(entityName, entityId)}>
+                        {item.getFormattedValue(column.fieldName)}
+                    </Link>
+                </Stack>
+            );
+        }
+
+        // handle all other columns
+        return (
+            <Stack className={gridStyles.itemContainer}>
+                <Label className={gridStyles.itemLabel} style={{ backgroundColor: fill, padding: padding }}>
+                    {item.getFormattedValue(column.fieldName)}
+                </Label>
+            </Stack>
+        );
+    }
 
     React.useEffect(() => {
         const getOptionFill = async () => {
@@ -29,26 +81,6 @@ const GridColumnItem: React.FC<GridColumnItemProps> = (props) => {
 
         getOptionFill();
     }, [column, item, gridService]);
-
-    if (column && column.fieldName && item) {
-        if (column.data.isPrimary) {
-            return (
-                <Stack className={gridStyles.itemContainer}>
-                    <Link className={gridStyles.link} onClick={() => onNavigate(item)}>
-                        {item.getFormattedValue(column.fieldName)}
-                    </Link>
-                </Stack>
-            );
-        }
-
-        return (
-            <Stack className={gridStyles.itemContainer}>
-                <Label className={gridStyles.itemLabel} style={{ backgroundColor: fill, padding: padding }}>
-                    {item.getFormattedValue(column.fieldName)}
-                </Label>
-            </Stack>
-        );
-    }
 
     return (
         <></>

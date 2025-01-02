@@ -1,10 +1,16 @@
 import * as React from 'react';
 import { IGroupWithColor } from '../types/GridProviderProps';
-import { useApiProvider } from '../providers/ApiProvider';
 import { DataSetColumn, DataSetRecord } from '../types/AppProps';
+import { useApiProvider } from '../providers/ApiProvider';
 
-export const useGetGroups = (items: DataSetRecord[], primaryGroupByName: string | null, secondaryGroupByName: string | null, defaultCollapse: boolean) => {
-    const {gridService} = useApiProvider();
+export const useGridGroups = (
+    records: Record<string, DataSetRecord>,
+    sortedRecordIds: string[],
+    primaryGroupBy: string | null,
+    secondaryGroupBy: string | null,
+    defaultCollapse: boolean
+) => {
+    const { gridService } = useApiProvider();
     const [groups, setGroups] = React.useState<IGroupWithColor[] | undefined>();
     const [collapsedState, setCollapsedState] = React.useState<Record<string, boolean>>({});
     const [groupsLoading, setGroupsLoading] = React.useState<boolean>(true);
@@ -164,11 +170,11 @@ export const useGetGroups = (items: DataSetRecord[], primaryGroupByName: string 
     };
 
     const getGroups = async (items: DataSetRecord[]): Promise<IGroupWithColor[] | undefined> => {
-        const primaryGroupByColumn = primaryGroupByName ? gridService.getGroupByColumn(primaryGroupByName) : undefined;
-        const secondaryGroupByColumn = secondaryGroupByName ? gridService.getGroupByColumn(secondaryGroupByName) : undefined;
+        const primaryGroupByColumn = primaryGroupBy ? gridService.getGroupByColumn(primaryGroupBy) : undefined;
+        const secondaryGroupByColumn = secondaryGroupBy ? gridService.getGroupByColumn(secondaryGroupBy) : undefined;
         let formattedGroups: IGroupWithColor[] = [];
 
-        if (!primaryGroupByName || primaryGroupByName === "all-items") {
+        if (!primaryGroupBy || primaryGroupBy === "all-items") {
             return undefined;
         }
 
@@ -184,19 +190,24 @@ export const useGetGroups = (items: DataSetRecord[], primaryGroupByName: string 
         }
         return formattedGroups
     };
-    
+
     React.useEffect(() => {
+        const _items = sortedRecordIds.map((id) => {
+            const record = records[id];
+            return record;
+        });
+
         const fetchGroups = async () => {
-            try {     
-                const _groups = await getGroups(items);
+            try {
+                const _groups = await getGroups(_items);
                 setGroupsLoading(false);
-                setGroups(_groups);                
+                setGroups(_groups);
             } catch (error) {
                 console.error('Error fetching groups: ', error);
             }
         };
         fetchGroups();
-    }, [items, primaryGroupByName, secondaryGroupByName, defaultCollapse]);
+    }, [records, sortedRecordIds, primaryGroupBy, secondaryGroupBy, defaultCollapse]);
 
     React.useEffect(() => {
         const newState: Record<string, boolean> = {};
@@ -210,6 +221,6 @@ export const useGetGroups = (items: DataSetRecord[], primaryGroupByName: string 
         });
         setCollapsedState(newState);
     }, [groups]);
-   
+
     return { groups, groupsLoading, setCollapsedState };
 }

@@ -69,7 +69,7 @@ const FilterModal: React.FC = () => {
                                     multiSelect
                                     selectedKey={selectedKeys}
                                     options={filterOptions}
-                                    styles={{ root: { marginBottom: "15px" } }}
+                                    styles={{ root: { marginBottom: "15px" }, optionsContainerWrapper: { width: "100%" } }}
                                     onChange={handleOptionChange}
                                 />
                             }
