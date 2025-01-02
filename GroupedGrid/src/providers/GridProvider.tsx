@@ -6,7 +6,6 @@ import {
 import GridColumnItem from '../components/GridColumnItem';
 import { GridProviderProps, IGroupWithColor } from '../types/GridProviderProps';
 import { useGridGroups } from '../hooks/useGridGroups';
-import { useSortedItems } from '../hooks/useSortedItems';
 import { gridStyles } from '../components/GridStyles';
 import { DataSetRecord } from '../types/AppProps';
 import { useGridColumns } from '../hooks/useGridColumns';
@@ -46,10 +45,9 @@ const GridProvider: React.FC<GridProviderProps> = (props) => {
     const { gridColumns, contextualMenuProps } = useGridColumns(
         columns, sorting, filtering, width, allowGroupChange, resources, primaryGroupBy, secondaryGroupBy, setPrimaryGroupBy, setSecondaryGroupBy, onFilter, onSort
     );
-    const { groups, groupsLoading, setCollapsedState } = useGridGroups(
-        records, sortedRecordIds, primaryGroupBy, secondaryGroupBy, collapsed
+    const { groups, sortedItems, groupsLoading, setCollapsedState } = useGridGroups(
+        records, sortedRecordIds, primaryGroupBy, secondaryGroupBy, collapsed, setIsLoading
     );
-    const { items, sortedItems } = useSortedItems(records, sortedRecordIds, primaryGroupBy, secondaryGroupBy, columns[0], setIsLoading);
 
     const onRenderCheckbox = (props: IDetailsListCheckboxProps | undefined) => {
         return (

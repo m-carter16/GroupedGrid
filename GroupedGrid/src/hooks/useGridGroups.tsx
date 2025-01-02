@@ -8,12 +8,28 @@ export const useGridGroups = (
     sortedRecordIds: string[],
     primaryGroupBy: string | null,
     secondaryGroupBy: string | null,
-    defaultCollapse: boolean
+    defaultCollapse: boolean,
+    setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
     const { gridService } = useApiProvider();
     const [groups, setGroups] = React.useState<IGroupWithColor[] | undefined>();
     const [collapsedState, setCollapsedState] = React.useState<Record<string, boolean>>({});
     const [groupsLoading, setGroupsLoading] = React.useState<boolean>(true);
+    const [sortedItems, setSortedItems] = React.useState<DataSetRecord[]>([]);
+
+    const flattenNestedItems = (groupedItems: { [key: string]: { [key: string]: DataSetRecord[] } }) => {
+        const items: DataSetRecord[] = [];
+        // Flatten items by primary and secondary groups in the order they appear in groupedItems
+        for (const primaryKey of Object.keys(groupedItems)) {
+            const secondaryGroups = groupedItems[primaryKey];
+
+            for (const secondaryKey of Object.keys(secondaryGroups)) {
+                items.push(...secondaryGroups[secondaryKey]);
+            }
+        }
+
+        return items;
+    };
 
     const groupItemsNested = async (
         items: DataSetRecord[],
@@ -60,7 +76,7 @@ export const useGridGroups = (
             return await gridService.sortGroupsByOptionSetOrderNested(groupedItems, undefined, secondaryGroupByColumn);
         }
         return groupedItems;
-    }
+    };
 
     const formatGroupsNested = async (
         groupItems: { [key: string]: { [key: string]: DataSetRecord[] } },
@@ -119,6 +135,16 @@ export const useGridGroups = (
         return groups;
     }
 
+    const flattenItems = (groupedItems: { [key: string]: DataSetRecord[] }) => {
+        const items: DataSetRecord[] = [];
+        for (const primary in groupedItems) {
+            groupedItems[primary].forEach(item => {
+                items.push(item);
+            });
+        }
+        return items;
+    }
+
     const groupItems = async (items: DataSetRecord[], primaryGroupByColumn: DataSetColumn): Promise<{ [key: string]: DataSetRecord[] }> => {
         const primaryColumnName = primaryGroupByColumn ? primaryGroupByColumn.name : "";
         const primaryGroupByType = primaryGroupByColumn ? primaryGroupByColumn.dataType : "SingleLine.Text";
@@ -169,29 +195,41 @@ export const useGridGroups = (
         return groups;
     };
 
-    const getGroups = async (items: DataSetRecord[]): Promise<IGroupWithColor[] | undefined> => {
+    const getGroups = async (items: DataSetRecord[]): Promise<[IGroupWithColor[],  DataSetRecord[]]> => {
         const primaryGroupByColumn = primaryGroupBy ? gridService.getGroupByColumn(primaryGroupBy) : undefined;
         const secondaryGroupByColumn = secondaryGroupBy ? gridService.getGroupByColumn(secondaryGroupBy) : undefined;
         let formattedGroups: IGroupWithColor[] = [];
+        let sortedItems: DataSetRecord[] = [];
 
         if (!primaryGroupBy || primaryGroupBy === "all-items") {
-            return undefined;
+            const groups = [{
+                key: 'all-items',
+                name: 'All Items',
+                startIndex: 0,
+                count: items.length,
+                level: 0,
+                color: "black"
+            }];
+            [groups, items];
         }
 
         if (primaryGroupByColumn) {
             if (secondaryGroupByColumn) {
                 const groupedItems = await groupItemsNested(items, primaryGroupByColumn, secondaryGroupByColumn);
                 formattedGroups = await formatGroupsNested(groupedItems, primaryGroupByColumn, secondaryGroupByColumn);
+                sortedItems = flattenNestedItems(groupedItems);
 
             } else {
                 const groupedItems = await groupItems(items, primaryGroupByColumn);
                 formattedGroups = await formatGroups(groupedItems, primaryGroupByColumn);
+                sortedItems = flattenItems(groupedItems);
             }
         }
-        return formattedGroups
+        return [formattedGroups, sortedItems];
     };
 
     React.useEffect(() => {
+        setIsLoading(false);
         const _items = sortedRecordIds.map((id) => {
             const record = records[id];
             return record;
@@ -199,9 +237,10 @@ export const useGridGroups = (
 
         const fetchGroups = async () => {
             try {
-                const _groups = await getGroups(_items);
+                const [formattedGroups, sortedItems] = await getGroups(_items);
                 setGroupsLoading(false);
-                setGroups(_groups);
+                setGroups(formattedGroups);
+                setSortedItems(sortedItems);
             } catch (error) {
                 console.error('Error fetching groups: ', error);
             }
@@ -222,5 +261,5 @@ export const useGridGroups = (
         setCollapsedState(newState);
     }, [groups]);
 
-    return { groups, groupsLoading, setCollapsedState };
+    return { groups, sortedItems, groupsLoading, setCollapsedState };
 }
